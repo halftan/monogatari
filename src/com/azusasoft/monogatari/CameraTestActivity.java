@@ -6,37 +6,28 @@
  */
 package com.azusasoft.monogatari;
 
-import com.azusasoft.tsukomiyi.R;
-
+import net.sourceforge.zbar.Config;
+import net.sourceforge.zbar.Image;
+import net.sourceforge.zbar.ImageScanner;
+import net.sourceforge.zbar.Symbol;
+import net.sourceforge.zbar.SymbolSet;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
+import android.hardware.Camera;
+import android.hardware.Camera.AutoFocusCallback;
+import android.hardware.Camera.Parameters;
+import android.hardware.Camera.PreviewCallback;
+import android.hardware.Camera.Size;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.util.Log;
-
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
-import android.widget.Button;
-
-import android.hardware.Camera;
-import android.hardware.Camera.PreviewCallback;
-import android.hardware.Camera.AutoFocusCallback;
-import android.hardware.Camera.Parameters;
-import android.hardware.Camera.Size;
-
-import android.widget.TextView;
-import android.graphics.ImageFormat;
-
-/* Import ZBar Class files */
-import net.sourceforge.zbar.ImageScanner;
-import net.sourceforge.zbar.Image;
-import net.sourceforge.zbar.Symbol;
-import net.sourceforge.zbar.SymbolSet;
-import net.sourceforge.zbar.Config;
 
 public class CameraTestActivity extends Activity {
 	private Camera mCamera;
@@ -44,13 +35,14 @@ public class CameraTestActivity extends Activity {
 	private Handler autoFocusHandler;
 	private String mFocusMode;
 
-	TextView scanText;
-	Button scanButton;
+	FrameLayout frameLayout;
 
 	ImageScanner scanner;
 
 	private boolean barcodeScanned = false;
 	private boolean previewing = true;
+	
+	public static boolean animationEnded = true;
 
 	static {
 		System.loadLibrary("iconv");
@@ -59,10 +51,13 @@ public class CameraTestActivity extends Activity {
 	@SuppressLint("InlinedApi")
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
+		
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, 
+                                WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		setContentView(R.layout.main);
 
-		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
 		mCamera = getCameraInstance();
 		autoFocusHandler = new Handler();
@@ -81,31 +76,31 @@ public class CameraTestActivity extends Activity {
         for (String f : parameters.getSupportedFocusModes())
             if (f == cameraFeature)
                 mFocusMode = f;
-
-		scanText = (TextView) findViewById(R.id.scanText);
-
-		scanButton = (Button) findViewById(R.id.scanButton);
-		
-		init();
-	}
-	
-	private void init() {
-		if (mCamera == null)
-			mCamera = getCameraInstance();
+		frameLayout = (FrameLayout) findViewById(R.id.cameraPreview);
 		if (mFocusMode != null)
 			mPreview = new CameraPreview(this, mCamera, previewCb, null, mFocusMode);
 		else 
 			mPreview = new CameraPreview(this, mCamera, previewCb, autoFocusCB, null);
 		
+		init();
+	}
+	
+	private void init() {
+		if (mCamera == null) {
+			mCamera = getCameraInstance();
+			if (mFocusMode != null)
+				mPreview = new CameraPreview(this, mCamera, previewCb, null, mFocusMode);
+			else 
+				mPreview = new CameraPreview(this, mCamera, previewCb, autoFocusCB, null);
+		}
+		
 		FrameLayout preview = (FrameLayout) findViewById(R.id.cameraPreview);
-		preview.removeAllViews();
 		preview.addView(mPreview);
 		
-		scanButton.setOnClickListener(new OnClickListener() {
+		frameLayout.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				if (barcodeScanned) {
+				if (barcodeScanned && animationEnded) {
 					barcodeScanned = false;
-					scanText.setText("Scanning...");
 					mCamera.setPreviewCallback(previewCb);
 					mCamera.startPreview();
 					previewing = true;
@@ -123,9 +118,15 @@ public class CameraTestActivity extends Activity {
 		});
 	}
 
+	@Override
 	public void onPause() {
 		super.onPause();
 		releaseCamera();
+	}
+	
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+	    super.onConfigurationChanged(newConfig);
 	}
 
 	/** A safe way to get an instance of the Camera object. */
@@ -171,14 +172,17 @@ public class CameraTestActivity extends Activity {
 
 				SymbolSet syms = scanner.getResults();
 				for (Symbol sym : syms) {
-					scanText.setText("barcode result " + sym.getData());
+					// Do something with the code
 					barcodeScanned = true;
 				}
+				
+		    	new Danmaku(frameLayout, "TestTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTdksf");
 			}
 		}
 	};
 
 	// Mimic continuous auto-focusing
+	// Not used when SDK_INT >= 14
 	AutoFocusCallback autoFocusCB = new AutoFocusCallback() {
 		public void onAutoFocus(boolean success, Camera camera) {
 			autoFocusHandler.postDelayed(doAutoFocus, 1000);

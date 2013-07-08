@@ -6,25 +6,21 @@
 package com.azusasoft.monogatari;
 
 import java.io.IOException;
+import java.util.List;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.os.Build;
-import android.os.Bundle;
-
-import android.util.Log;
-
-import android.view.View;
-import android.view.Surface;
-import android.view.SurfaceView;
-import android.view.SurfaceHolder;
-
 import android.content.Context;
-
 import android.hardware.Camera;
-import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.Parameters;
+import android.hardware.Camera.PreviewCallback;
+import android.hardware.Camera.Size;
+import android.os.Build;
+import android.util.Log;
+import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
+import android.view.WindowManager;
 
 /** A basic Camera preview class */
 @SuppressLint("InlinedApi")
@@ -34,7 +30,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     private PreviewCallback previewCallback;
     private AutoFocusCallback autoFocusCallback;
 
-    public CameraPreview(Context context, Camera camera,
+    @SuppressWarnings("deprecation")
+	public CameraPreview(Context context, Camera camera,
                          PreviewCallback previewCb,
                          AutoFocusCallback autoFocusCb,
                          String focusMode) {
@@ -47,29 +44,31 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
          * Set camera to continuous focus if supported, otherwise use
          * software auto-focus. Only works for API level >=9.
          */
-        
+
+		Parameters params = mCamera.getParameters();
         if (autoFocusCb == null) {
         	if (focusMode == null) {
 	        	String cameraFeature = Parameters.FOCUS_MODE_CONTINUOUS_VIDEO;
 	        	if (Build.VERSION.SDK_INT >= 14) {
 	        		cameraFeature = Parameters.FOCUS_MODE_CONTINUOUS_PICTURE;
 	        	}
-	            Parameters params = mCamera.getParameters();
 	            for (String f : params.getSupportedFocusModes()) {
 	                if (f == cameraFeature) {
 	                    params.setFocusMode(f);
-	                    mCamera.setParameters(params);
 	                    break;
 	                }
 	            }
         	} else {
-        		Parameters params = mCamera.getParameters();
         		params.setFocusMode(focusMode);
-        		mCamera.setParameters(params);
         	}
         }
+        List<Size> sizes = params.getSupportedPreviewSizes();
+//        WindowManager windowManager = (WindowManager)context.getSystemService(Context.WINDOW_SERVICE);
+//        Display display = windowManager.getDefaultDisplay();
+//        params.setPreviewSize(display.getWidth(), display.getHeight());
+        params.setPreviewSize(sizes.get(0).width, sizes.get(0).height);
+        mCamera.setParameters(params);
         
-
         // Install a SurfaceHolder.Callback so we get notified when the
         // underlying surface is created and destroyed.
         mHolder = getHolder();
@@ -110,8 +109,19 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         }
 
         try {
-            // Hard code camera surface rotation 90 degs to match Activity view in portrait
-            mCamera.setDisplayOrientation(90);
+        	int orientation = 0;
+        	WindowManager windowManager = (WindowManager)getContext().getSystemService(Context.WINDOW_SERVICE);
+        	Log.d("camera", String.valueOf(windowManager.getDefaultDisplay().getRotation()));
+        	switch(windowManager.getDefaultDisplay().getRotation()) {
+        	
+        	case Surface.ROTATION_0:
+                orientation = 0;
+                break;
+            case Surface.ROTATION_180:
+                orientation = 180;
+                break;
+        	}
+            mCamera.setDisplayOrientation(orientation); // Landscape only.
 
             mCamera.setPreviewDisplay(mHolder);
             mCamera.setPreviewCallback(previewCallback);
@@ -121,4 +131,5 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             Log.d("DBG", "Error starting camera preview: " + e.getMessage());
         }
     }
+    
 }
