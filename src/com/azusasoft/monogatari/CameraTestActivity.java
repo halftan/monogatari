@@ -28,12 +28,14 @@ import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 
 public class CameraTestActivity extends Activity {
 	private Camera mCamera;
 	private CameraPreview mPreview;
 	private Handler autoFocusHandler;
 	private String mFocusMode;
+	static private Activity mMainActivity;
 
 	FrameLayout frameLayout;
 
@@ -47,11 +49,16 @@ public class CameraTestActivity extends Activity {
 	static {
 		System.loadLibrary("iconv");
 	}
+	
+	static public Activity getMainActivity() {
+		return mMainActivity;
+	}
 
 	@SuppressLint("InlinedApi")
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
+		mMainActivity = this;
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, 
                                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -172,11 +179,12 @@ public class CameraTestActivity extends Activity {
 
 				SymbolSet syms = scanner.getResults();
 				for (Symbol sym : syms) {
-					// Do something with the code
+					// TODO Do something with the code
 					barcodeScanned = true;
 				}
 				
-		    	new Danmaku(frameLayout, "TestTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTdksf");
+		    	Danmaku test = new Danmaku(frameLayout, "TestTTTTTTTTTTTADTTTTTTTTTTTTTTdgTTTTTTTTTTTTTvc4TTTTTTTdksf");
+		    	test.start();
 			}
 		}
 	};
