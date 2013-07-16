@@ -51,7 +51,7 @@ public class Danmaku extends TextView {
 		// Calculate scroll velocity
 		float textW = getPaint().measureText(text);
 		float viewW = display.getWidth();
-		mVelocity = (int) ((viewW + textW) /  getResources().getInteger(R.integer.danmaku_duration_half)) * mScrollInterval;
+		mVelocity = (int) ((viewW + textW) /  getResources().getInteger(R.integer.danmaku_duration_half)) * mScrollInterval + 10;
 		// Add spacer before and after text.
 		int spacerBefore = (int) ((viewW / getPaint().measureText(" ")) + 1);
 		int spacerAfter = (int) ((viewW / textW) + 1);
