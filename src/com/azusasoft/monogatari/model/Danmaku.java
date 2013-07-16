@@ -1,4 +1,9 @@
-package com.azusasoft.monogatari;
+package com.azusasoft.monogatari.model;
+
+import java.lang.ref.WeakReference;
+
+import com.azusasoft.monogatari.R;
+import com.azusasoft.monogatari.R.integer;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -22,6 +27,7 @@ public class Danmaku extends TextView {
 	private int mVelocity;
 	
 	private DanmakuListener mListener;
+	private final ScrollHandler mScrollHandler;
 
 	public Danmaku(FrameLayout root) {
 		this(root, "");
@@ -31,6 +37,7 @@ public class Danmaku extends TextView {
 	public Danmaku(FrameLayout root, String text) {
 		super(root.getContext());
 		
+		mScrollHandler = new ScrollHandler(this);
 		mRoot = root;
 //		Hard coded text size.
 //		TextSize will be retrieved from the server
@@ -60,7 +67,50 @@ public class Danmaku extends TextView {
 	}
 	
 	public void setText(String text) {
-		setText(text);
+		super.setText(text);
+	}
+	
+	public void start() {
+		setVisibility(VISIBLE);
+	    mScrollHandler.sendEmptyMessage(0);
+	}
+	
+	public void setListener(DanmakuListener listener) {
+		mListener = listener;
+	}
+			
+	public void scroll(Message msg) {
+        if (mScrollCount > 0) {
+            scrollBy(mVelocity, 0);
+            Log.d("Danmaku", "Scrolled to " + getScrollX() + " px");
+            Log.d("Danmaku", "Scroll Count: " + mScrollCount);
+            mScrollCount --;
+        	mScrollHandler.sendEmptyMessageDelayed(0, mScrollInterval);
+        } else {
+        	setVisibility(GONE);
+        	if (mListener != null)
+        		mListener.danmakuEnded();
+        }
+    }
+	
+	static private class ScrollHandler extends Handler {
+		private final WeakReference<Danmaku> mDanmaku;
+		
+		ScrollHandler(Danmaku danmaku) {
+			mDanmaku = new WeakReference<Danmaku>(danmaku);
+		}
+		
+		@Override
+		public void handleMessage(Message msg) {
+			Danmaku danmaku = mDanmaku.get();
+			if (danmaku != null) {
+				danmaku.scroll(msg);
+			}
+		}
+	}
+	
+	public interface DanmakuListener {
+		public void danmakuEnded();
 	}
 	
 	private String strMultiply(int c) {
@@ -68,36 +118,5 @@ public class Danmaku extends TextView {
 		for (int i = 0; i < c; ++i)
 			sb.append(" ");
 		return sb.toString();
-	}
-	
-	public void start() {
-		setVisibility(VISIBLE);
-	    scrollHandler.sendEmptyMessage(0);
-	}
-	
-	public void setListener(DanmakuListener listener) {
-		mListener = listener;
-	}
-	
-	private Handler scrollHandler = new Handler() {
-		
-		public void handleMessage(Message msg) {
-            if (mScrollCount > 0) {
-	            scrollBy(mVelocity, 0);
-//	            requestLayout();
-	            Log.d("Danmaku", "Scrolled to " + getScrollX() + " px");
-	            Log.d("Danmaku", "Scroll Count: " + mScrollCount);
-	            mScrollCount --;
-	        	sendEmptyMessageDelayed(0, mScrollInterval);
-            } else {
-            	setVisibility(GONE);
-            	if (mListener != null)
-            		mListener.danmakuEnded();
-            }
-        }
-	};
-	
-	public interface DanmakuListener {
-		void danmakuEnded();
 	}
 }
