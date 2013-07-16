@@ -6,6 +6,9 @@
  */
 package com.azusasoft.monogatari;
 
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+
 import net.sourceforge.zbar.Config;
 import net.sourceforge.zbar.Image;
 import net.sourceforge.zbar.ImageScanner;
@@ -13,6 +16,8 @@ import net.sourceforge.zbar.Symbol;
 import net.sourceforge.zbar.SymbolSet;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.hardware.Camera;
@@ -23,28 +28,37 @@ import android.hardware.Camera.Size;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Message;
+import android.support.v4.app.FragmentActivity;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.TextView;
 
-public class CameraTestActivity extends Activity {
+import com.azusasoft.monogatari.model.Danmaku;
+
+public class CameraTestActivity extends FragmentActivity {
 	private Camera mCamera;
 	private CameraPreview mPreview;
 	private Handler autoFocusHandler;
 	private String mFocusMode;
 	static private Activity mMainActivity;
 
-	FrameLayout frameLayout;
-
+	FrameLayout mFrameLayout;
 	ImageScanner scanner;
 
 	private boolean barcodeScanned = false;
 	private boolean previewing = true;
 	
+	public DanmakuHandler danmakuHandler;
+	
 	public static boolean animationEnded = true;
+	
+	private ArrayList<Danmaku> mDanmakuList;
 
 	static {
 		System.loadLibrary("iconv");
@@ -83,11 +97,14 @@ public class CameraTestActivity extends Activity {
         for (String f : parameters.getSupportedFocusModes())
             if (f == cameraFeature)
                 mFocusMode = f;
-		frameLayout = (FrameLayout) findViewById(R.id.cameraPreview);
+        
 		if (mFocusMode != null)
 			mPreview = new CameraPreview(this, mCamera, previewCb, null, mFocusMode);
 		else 
 			mPreview = new CameraPreview(this, mCamera, previewCb, autoFocusCB, null);
+
+		mFrameLayout = (FrameLayout) findViewById(R.id.cameraPreview);
+		danmakuHandler = new DanmakuHandler(mFrameLayout);
 		
 		init();
 	}
@@ -104,7 +121,9 @@ public class CameraTestActivity extends Activity {
 		FrameLayout preview = (FrameLayout) findViewById(R.id.cameraPreview);
 		preview.addView(mPreview);
 		
-		frameLayout.setOnClickListener(new OnClickListener() {
+		mDanmakuList = new ArrayList<Danmaku>();
+		
+		mFrameLayout.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				if (barcodeScanned && animationEnded) {
 					barcodeScanned = false;
@@ -161,7 +180,7 @@ public class CameraTestActivity extends Activity {
 				mCamera.autoFocus(autoFocusCB);
 		}
 	};
-
+	
 	PreviewCallback previewCb = new PreviewCallback() {
 		public void onPreviewFrame(byte[] data, Camera camera) {
 			Camera.Parameters parameters = camera.getParameters();
@@ -178,13 +197,16 @@ public class CameraTestActivity extends Activity {
 				mCamera.stopPreview();
 
 				SymbolSet syms = scanner.getResults();
+				StringBuilder results = new StringBuilder();
 				for (Symbol sym : syms) {
-					// TODO Do something with the code
+					results.append(sym.getData());
 					barcodeScanned = true;
 				}
-				
-		    	Danmaku test = new Danmaku(frameLayout, "TestTTTTTTTTTTTADTTTTTTTTTTTTTTdgTTTTTTTTTTTTTvc4TTTTTTTdksf");
-		    	test.start();
+				NewDanmakuDialog dialog = new NewDanmakuDialog();
+				Bundle args = new Bundle();
+				args.putString("Debug", results.toString());
+				dialog.setArguments(args);
+				dialog.show(getSupportFragmentManager(), "NewDanmakuDialogFragment");
 			}
 		}
 	};
@@ -196,4 +218,32 @@ public class CameraTestActivity extends Activity {
 			autoFocusHandler.postDelayed(doAutoFocus, 1000);
 		}
 	};
+	
+	public static class DanmakuHandler extends Handler {
+		public static final int NEW_DANMAKU = 0xAA;
+		public static final int PAUSE_DANMAKU = 0xBB;
+		
+		public static final String DANMAKU_BUNDLE_KEY = "new danmaku";
+		
+		private final WeakReference<FrameLayout> mDisplayLayer;
+		
+		public DanmakuHandler(FrameLayout displayLayer) {
+			mDisplayLayer = new WeakReference<FrameLayout>(displayLayer);
+		}
+		
+		@Override
+		public void handleMessage(Message msg) {
+			switch (msg.what) {
+			case NEW_DANMAKU:
+				FrameLayout root = mDisplayLayer.get();
+				if (root != null) {
+					Danmaku danmaku = new Danmaku(root, msg.getData().getString(DANMAKU_BUNDLE_KEY));
+					danmaku.start();
+				} else {
+					Log.e("Danmaku error", "Cannot find parent reference.");
+				}
+				
+			}
+		}
+	}
 }
