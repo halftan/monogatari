@@ -34,8 +34,8 @@ public class NewDanmakuDialog extends DialogFragment {
 				public void onClick(DialogInterface dialog, int which) {
 					Message msg = new Message();
 					Bundle data = new Bundle();
-					msg.what = DanmakuHandler.NEW_DANMAKU;
-					data.putString(DanmakuHandler.DANMAKU_BUNDLE_KEY,
+					msg.what = DanmakuHandler.NEW_AND_POST_DANMAKU;
+					data.putString(DanmakuHandler.DANMAKU_TEXT_KEY,
 							((EditText) NewDanmakuDialog.this.getDialog()
 									.findViewById(R.id.input)).getText().toString());
 					msg.setData(data);
