@@ -48,7 +48,7 @@ public class MessageController {
 		mClient.setApplicationId(UNIID_APP);
 		mClient.setClientSecret("YXA6sAc9Unk_ByF4HYHU9U1wh1hk8LI");
 		mClient.setClientId("YXA6vPQQEOhSEeKKVnuBn11m3g");
-		mClient.setAccessToken("YWMtcumDIO32EeKaKcWPZlEvuwAAAUAKxABSxXcTTD0-64TD5JHAo56jWh0c_b4");
+		mClient.setAccessToken("YWMtTZHkUPAhEeKV0l-lqNN0qQAAAUAY-EsVx4BUUQI7Ehpz-9exFTbIspSHBgY");
 	}
 
 	public void searchDanmakuFor(String code) {
@@ -62,7 +62,7 @@ public class MessageController {
 					response = mClient.apiRequest(HttpMethod.GET, null, null, UNIID_ORG+"/"+UNIID_APP
 							, "monos", mMono, "owns");
 				} catch (Exception e) {
-					Log.e("Danmaku uniid", e.toString());
+					Log.e("Danmaku uniid request", e.toString());
 				}
 				ArrayList<String> danmakuList = new ArrayList<String>();
 				if (response != null && response.getFirstEntity() != null &&
