@@ -15,7 +15,6 @@ import net.sourceforge.zbar.ImageScanner;
 import net.sourceforge.zbar.Symbol;
 import net.sourceforge.zbar.SymbolSet;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.hardware.Camera;
@@ -33,6 +32,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.FrameLayout;
 
 import com.azusasoft.monogatari.controller.MessageController;
@@ -47,6 +47,8 @@ public class CameraTestActivity extends FragmentActivity {
 
 	FrameLayout mFrameLayout;
 	ImageScanner scanner;
+	private Button mNewButton;
+	private Button mResetButton;
 
 	private boolean barcodeScanned = false;
 	private boolean previewing = true;
@@ -67,14 +69,17 @@ public class CameraTestActivity extends FragmentActivity {
 	@SuppressLint("InlinedApi")
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		
 		mMainActivity = this;
+		
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, 
                                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
-		setContentView(R.layout.main);
-
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+		setContentView(R.layout.main);
+		
+		mFrameLayout = (FrameLayout) findViewById(R.id.cameraPreview);
+		mNewButton = (Button) findViewById(R.id.newBtn);
+		mResetButton = (Button) findViewById(R.id.resetBtn);
 
 		mCamera = getCameraInstance();
 		autoFocusHandler = new Handler();
@@ -99,7 +104,6 @@ public class CameraTestActivity extends FragmentActivity {
 		else 
 			mPreview = new CameraPreview(this, mCamera, previewCb, autoFocusCB, null);
 
-		mFrameLayout = (FrameLayout) findViewById(R.id.cameraPreview);
 		danmakuHandler = new DanmakuHandler(mFrameLayout);
 		messageController = new MessageController(danmakuHandler,
 				new MessageController.onNoDanmakuListener() {
@@ -110,14 +114,15 @@ public class CameraTestActivity extends FragmentActivity {
 				Bundle args = new Bundle();
 				args.putString(DanmakuHandler.DANMAKU_MONO_KEY, mono);
 				dialog.setArguments(args);
-				dialog.show(getSupportFragmentManager(), "NewDanmakuDialogFragment");				
+				dialog.show(getSupportFragmentManager(), "NewDanmakuDialogFragment");
 			}
 		});
-		
-		init();
 	}
 	
-	private void init() {
+	@Override
+	protected void onResume() {
+		super.onResume();
+		Log.d("danmaku lifecycle", "on resume");
 		if (mCamera == null) {
 			mCamera = getCameraInstance();
 			if (mFocusMode != null)
@@ -126,34 +131,54 @@ public class CameraTestActivity extends FragmentActivity {
 				mPreview = new CameraPreview(this, mCamera, previewCb, autoFocusCB, null);
 		}
 		
-		FrameLayout preview = (FrameLayout) findViewById(R.id.cameraPreview);
-		preview.addView(mPreview);
+		mFrameLayout.addView(mPreview);
+		mFrameLayout.bringChildToFront(mNewButton);
+		mFrameLayout.bringChildToFront(mResetButton);
 				
-		mFrameLayout.setOnClickListener(new OnClickListener() {
+		/*mFrameLayout.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				if (barcodeScanned && animationEnded) {
-					barcodeScanned = false;
-					mCamera.setPreviewCallback(previewCb);
-					mCamera.startPreview();
-					previewing = true;
-					if (mFocusMode != null) {
-						Parameters params = mCamera.getParameters();
-						params.setFocusMode(mFocusMode);
-						mCamera.setParameters(params);
-					} else
-						mCamera.autoFocus(autoFocusCB);
-				} else if (mCamera == null) {
-					init();
-					previewing = true;
-				}
 			}
-		});
+		});*/
 	}
 
 	@Override
 	public void onPause() {
 		super.onPause();
+		Log.d("danmaku lifecycle", "on pause");
+		mFrameLayout.removeView(mPreview);
 		releaseCamera();
+	}
+	
+	public void newDanmaku(View v) {
+		NewDanmakuDialog dialog = new NewDanmakuDialog();
+		Bundle args = new Bundle();
+		args.putString(DanmakuHandler.DANMAKU_MONO_KEY, messageController.getTargetBarcode());
+		dialog.setArguments(args);
+		dialog.show(getSupportFragmentManager(), "NewDanmakuDialogFragment");
+	}
+	
+	public void reset(View v) {
+		if (barcodeScanned && animationEnded) {
+			barcodeScanned = false;
+			mCamera.setPreviewCallback(previewCb);
+			mCamera.startPreview();
+			previewing = true;
+			if (mFocusMode != null) {
+				Parameters params = mCamera.getParameters();
+				params.setFocusMode(mFocusMode);
+				mCamera.setParameters(params);
+			} else
+				mCamera.autoFocus(autoFocusCB);
+		} else if (mCamera == null) {
+			mCamera = getCameraInstance();
+			if (mFocusMode != null)
+				mPreview = new CameraPreview(v.getContext(),
+						mCamera, previewCb, null, mFocusMode);
+			else 
+				mPreview = new CameraPreview(v.getContext(),
+						mCamera, previewCb, autoFocusCB, null);
+			previewing = true;
+		}
 	}
 	
 	@Override
@@ -231,7 +256,7 @@ public class CameraTestActivity extends FragmentActivity {
 		public static final int PAUSE_DANMAKU = 0xBB;
 		public static final int DISPLAY_DANMAKU = 0xCC;
 		
-		public static final int DanmakuDelay = 400;
+		public static final int DanmakuDelay = 4000;
 
 		// The content of danmaku
 		public static final String DANMAKU_TEXT_KEY = "danmaku text";
@@ -252,16 +277,19 @@ public class CameraTestActivity extends FragmentActivity {
 			if (root != null) {
 				switch (msg.what) {
 				case NEW_DANMAKU:
+					Log.d("danmaku handler", "new danmaku");
 					danmaku = new Danmaku(root, msg.getData().getString(DANMAKU_TEXT_KEY));
 					danmaku.start();
 					break;
 				case NEW_AND_POST_DANMAKU:
+					Log.d("danmaku handler", "new and post danmaku");
 					String text = msg.getData().getString(DANMAKU_TEXT_KEY);
 					danmaku = new Danmaku(root, text);
 					CameraTestActivity.getMainActivity().pushDanmaku(text);
 					danmaku.start();
 					break;
 				case DISPLAY_DANMAKU:
+					Log.d("danmaku handler", "display danmaku list");
 					ArrayList<String> danmakuList = msg.getData().getStringArrayList(DANMAKU_TEXT_LIST_KEY);
 					for (String str : danmakuList) {
 						Danmaku d = new Danmaku(root, str);
@@ -276,6 +304,7 @@ public class CameraTestActivity extends FragmentActivity {
 		}
 
 		public void showDanmaku(String text) {
+			Log.d("danmaku handler", "show danmaku");
 			Message msg = new Message();
 			Bundle data = new Bundle();
 			msg.what = DanmakuHandler.NEW_DANMAKU;
@@ -285,6 +314,7 @@ public class CameraTestActivity extends FragmentActivity {
 		}
 		
 		public void pushDanmaku(String text) {
+			Log.d("danmaku handler", "push danmaku");
 			Message msg = new Message();
 			Bundle data = new Bundle();
 			msg.what = DanmakuHandler.NEW_AND_POST_DANMAKU;

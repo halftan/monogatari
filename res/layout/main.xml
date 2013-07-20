@@ -7,4 +7,24 @@
     android:clipChildren="false"
     android:clipToPadding="false" >
 
+    <Button
+        android:id="@+id/newBtn"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left|bottom"
+        android:background="#80C0C0C0"
+        android:onClick="newDanmaku"
+        android:text="New" />
+
+    <Button
+        android:id="@+id/resetBtn"
+        style="?android:attr/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right|bottom"
+        android:background="#80C0C0C0"
+        android:onClick="reset"
+        android:text="Reset" />
+
 </FrameLayout>

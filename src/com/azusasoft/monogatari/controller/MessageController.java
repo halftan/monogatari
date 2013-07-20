@@ -48,7 +48,11 @@ public class MessageController {
 		mClient.setApplicationId(UNIID_APP);
 		mClient.setClientSecret("YXA6sAc9Unk_ByF4HYHU9U1wh1hk8LI");
 		mClient.setClientId("YXA6vPQQEOhSEeKKVnuBn11m3g");
-		mClient.setAccessToken("YWMtTZHkUPAhEeKV0l-lqNN0qQAAAUAY-EsVx4BUUQI7Ehpz-9exFTbIspSHBgY");
+		mClient.setAccessToken("YWMtp8ZpgPEdEeKzG4loRmbDpQAAAUAfbhwYU7sPQTmqQwDRtA7hk3i4IAJes6Q");
+	}
+	
+	public String getTargetBarcode() {
+		return mMono;
 	}
 
 	public void searchDanmakuFor(String code) {
@@ -71,6 +75,7 @@ public class MessageController {
 						danmakuList.add(entity.getProperties().get("text").textValue());
 					}
 					if (danmakuList.size() != 0) {
+						Log.i("danmaku displaying", "Danmaku size is " + danmakuList.size());
 						Message msg = new Message();
 						Bundle data = new Bundle();
 						msg.what = DanmakuHandler.DISPLAY_DANMAKU;
@@ -79,15 +84,16 @@ public class MessageController {
 						mHandler.sendMessage(msg);
 					}
 				} else {
-					Log.i("danmaku mono entity", "creating new mono");
+					Log.i("danmaku mono entity", "creating new mono: " + mMono);
 					Entity mono = new Entity("monos");
 					mono.setProperty("name", JsonUtils.toJsonNode(mMono));
+					Log.i("danmaku mono entity", "created jsonnode");
 					mClient.createEntity(mono);
 					mNoDanmakuListener.pushFirstDanmaku(mMono);
 				}
 				
 			}
-		}).start();
+		}, "search danmaku thread").start();
 	}
 	
 	public void pushDanmaku(String danmaku) {
@@ -118,8 +124,6 @@ public class MessageController {
 							});
 	        }
 		});
-
-		mHandler.showDanmaku(danmaku);
 		mDanmakuList.add(danmaku);
 	}
 
