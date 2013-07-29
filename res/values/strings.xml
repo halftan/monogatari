@@ -4,5 +4,7 @@
     <string name="danmaku_hint">请输入想要发送的弹幕</string>
     <string name="confirm">确定</string>
     <string name="cancel">取消</string>
+    <string name="history_activity">History</string>
+    <string name="not_scanned">还没有扫描到二维码哦~~</string>
 
 </resources>

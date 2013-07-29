@@ -16,14 +16,15 @@
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
-        <activity android:name="com.azusasoft.monogatari.CameraTestActivity"
+        <activity android:name="CameraTestActivity"
             android:configChanges="orientation"
-            android:label="@string/app_name">
+            android:label="@string/app_name" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity android:theme="@android:style/Theme.NoTitleBar.Fullscreen" android:label="@string/history_activity" android:screenOrientation="landscape" android:name="HistoryActivity"></activity>
     </application>
 
 </manifest>

@@ -10,45 +10,56 @@ import org.uniid.java.client.entities.User;
 import org.uniid.java.client.response.ApiResponse;
 import org.uniid.java.client.utils.JsonUtils;
 
-import android.os.Bundle;
-import android.os.Message;
 import android.util.Log;
 
-import com.azusasoft.monogatari.CameraTestActivity.DanmakuHandler;
+import com.azusasoft.monogatari.controller.DanmakuController.NewDanmakuListener;
+
 
 public class MessageController {
 
-	private String UNIID_API_URL = "http://54.248.89.253:8080";
-	private String UNIID_ORG = "azusasoft";
-	private String UNIID_APP = "monogatari";
+	private static String UNIID_API_URL = "http://54.248.89.253:8080";
+	private static String UNIID_ORG = "azusasoft";
+	private static String UNIID_APP = "sandbox";
 	
 	private Client mClient = null;
 	private String email;
 	private String username;
 	
-	private DanmakuHandler mHandler;
 	private ArrayList<String> mDanmakuList;
 
 	// mono refers to 物 in Japanese
 	private String mMono;
 	
-	public interface onNoDanmakuListener {
+	public interface danmakuEventListener {
 		public void pushFirstDanmaku(String mono);
+		public void loadDanmaku(ArrayList<String> danmakuList);
 	}
 	
-	private onNoDanmakuListener mNoDanmakuListener;
+	private danmakuEventListener mDanmakuEventListener;
 	
-	public MessageController(DanmakuHandler handler, onNoDanmakuListener listener) {
-		mHandler = handler;
-		mNoDanmakuListener = listener;
-		mDanmakuList = new ArrayList<String>();
-		mClient = new Client();
-		mClient.setApiUrl(UNIID_API_URL);
-		mClient.setOrganizationId(UNIID_ORG);
-		mClient.setApplicationId(UNIID_APP);
-		mClient.setClientSecret("YXA6sAc9Unk_ByF4HYHU9U1wh1hk8LI");
-		mClient.setClientId("YXA6vPQQEOhSEeKKVnuBn11m3g");
-		mClient.setAccessToken("YWMtp8ZpgPEdEeKzG4loRmbDpQAAAUAfbhwYU7sPQTmqQwDRtA7hk3i4IAJes6Q");
+	private MessageController() {}
+	
+	private static MessageController mInstance = null;
+	
+	public static MessageController init(danmakuEventListener listener) {
+		mInstance = new MessageController();
+		mInstance.mDanmakuEventListener = listener;
+		mInstance.mDanmakuList = new ArrayList<String>();
+		mInstance.mClient = new Client();
+		mInstance.mClient.setApiUrl(UNIID_API_URL);
+		mInstance.mClient.setOrganizationId(UNIID_ORG);
+		mInstance.mClient.setApplicationId(UNIID_APP);
+//		mInstance.mClient.setClientSecret("YXA6sAc9Unk_ByF4HYHU9U1wh1hk8LI");
+//		mInstance.mClient.setClientId("YXA6vPQQEOhSEeKKVnuBn11m3g");
+//		mInstance.mClient.setAccessToken("YWMtlHav0PW4EeKfupGdNBdSdQAAAUA9nE9NqDy-I6Jk2ezKZ5EHoZtrgBeYo10");
+		
+		return mInstance;
+	}
+	
+	public static MessageController getInstance() throws RuntimeException {
+		if (mInstance != null)
+			return mInstance;
+		else throw new RuntimeException("Message Controller haven't been initialized!");
 	}
 	
 	public String getTargetBarcode() {
@@ -76,12 +87,7 @@ public class MessageController {
 					}
 					if (danmakuList.size() != 0) {
 						Log.i("danmaku displaying", "Danmaku size is " + danmakuList.size());
-						Message msg = new Message();
-						Bundle data = new Bundle();
-						msg.what = DanmakuHandler.DISPLAY_DANMAKU;
-						data.putStringArrayList(DanmakuHandler.DANMAKU_TEXT_LIST_KEY, danmakuList);
-						msg.setData(data);
-						mHandler.sendMessage(msg);
+						mDanmakuEventListener.loadDanmaku(danmakuList);
 					}
 				} else {
 					Log.i("danmaku mono entity", "creating new mono: " + mMono);
@@ -89,28 +95,28 @@ public class MessageController {
 					mono.setProperty("name", JsonUtils.toJsonNode(mMono));
 					Log.i("danmaku mono entity", "created jsonnode");
 					mClient.createEntity(mono);
-					mNoDanmakuListener.pushFirstDanmaku(mMono);
+					mDanmakuEventListener.pushFirstDanmaku(mMono);
 				}
 				
 			}
 		}, "search danmaku thread").start();
 	}
 	
-	public void pushDanmaku(String danmaku) {
+	public void postDanmaku(String text) {
 		Entity danmakus = new Entity("danmakus");
-		danmakus.setProperty("text", JsonUtils.toJsonNode(danmaku));
+		danmakus.setProperty("text", JsonUtils.toJsonNode(text));
 		mClient.createEntityAsync(danmakus, new ApiResponseCallback() {
-	        @Override
-	        public void onException(Exception ex) {
-	                Log.i("danmaku entity", ex.toString());
-	        }
-	        @Override
-	        public void onResponse(ApiResponse response) {
-	                Log.d("danmaku entity", response.getFirstEntity().getUuid().toString());
-	        		Log.i("danmaku entity", "creating connection");
-	                mClient.connectEntitiesAsync("monos", mMono, "owns",
-	                		response.getFirstEntity().getUuid().toString(),
-	                		new ApiResponseCallback() {
+			@Override
+			public void onException(Exception ex) {
+					Log.i("danmaku entity", ex.toString());
+			}
+			@Override
+			public void onResponse(ApiResponse response) {
+					Log.d("danmaku entity", response.getFirstEntity().getUuid().toString());
+					Log.i("danmaku entity", "creating connection");
+					mClient.connectEntitiesAsync("monos", mMono, "owns",
+							response.getFirstEntity().getUuid().toString(),
+							new ApiResponseCallback() {
 								
 								@Override
 								public void onException(Exception arg0) {
@@ -122,22 +128,18 @@ public class MessageController {
 									Log.i("danmaku entity", "creating connection succeeded");
 								}
 							});
-	        }
-		});
-		mDanmakuList.add(danmaku);
-	}
-
-/*	public void onDataChange(DataSnapshot snapshot) {
-		if (snapshot.getChildrenCount() == 0)
-			mNoDanmakuListener.postFirstDanmaku(mMono);
-		else
-			for (DataSnapshot child : snapshot.getChildren()) {
-				String text = (String) child.getValue();
-				Log.d("Danmaku fetch", text);
-				mDanmakuList.add(text);
-				mHandler.insertDanmaku(text);
 			}
-	}*/
+		});
+		mDanmakuList.add(text);
+	}
+	
+	public NewDanmakuListener newDanmakuWillBePosted = new NewDanmakuListener() {
+		
+		@Override
+		public void newDanmaku(String text) {
+			postDanmaku(text);
+		}
+	};
 
 	public ApiResponse login(String usernameArg, String passwordArg) {
 

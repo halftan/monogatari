@@ -5,18 +5,17 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
-import android.os.Message;
 import android.support.v4.app.DialogFragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.webkit.WebView.FindListener;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import com.azusasoft.monogatari.CameraTestActivity.DanmakuHandler;
+import com.azusasoft.monogatari.controller.DanmakuController;
 
 public class NewDanmakuDialog extends DialogFragment {
+	public static final String SCANNED_BARCODE_KEY = "barcode key";
 
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -32,15 +31,13 @@ public class NewDanmakuDialog extends DialogFragment {
 			
 				@Override
 				public void onClick(DialogInterface dialog, int which) {
-					Message msg = new Message();
-					Bundle data = new Bundle();
-					msg.what = DanmakuHandler.NEW_AND_POST_DANMAKU;
-					data.putString(DanmakuHandler.DANMAKU_TEXT_KEY,
+					try {
+						DanmakuController.getInstance().newDanmaku(
 							((EditText) NewDanmakuDialog.this.getDialog()
 									.findViewById(R.id.input)).getText().toString());
-					msg.setData(data);
-					((CameraTestActivity) getActivity()).danmakuHandler
-						.sendMessage(msg);
+					} catch (RuntimeException e) {
+						Log.e("new danmaku dialog", e.getMessage());
+					}
 				}
 			})
 			.setNegativeButton(R.string.cancel, new OnClickListener() {
