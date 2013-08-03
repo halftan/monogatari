@@ -38,12 +38,12 @@ import com.azusasoft.monogatari.controller.DanmakuController;
 import com.azusasoft.monogatari.controller.MessageController;
 import com.azusasoft.monogatari.data.HistoryDbHelper;
 
-public class CameraTestActivity extends FragmentActivity {
+public class ScanningActivity extends FragmentActivity {
 	private Camera mCamera;
 	private CameraPreview mPreview;
 	private Handler autoFocusHandler;
 	private String mFocusMode;
-	static private CameraTestActivity mMainActivity;
+	static private ScanningActivity mMainActivity;
 
 	private FrameLayout mFrameLayout;
 	private ImageScanner scanner;
@@ -63,7 +63,7 @@ public class CameraTestActivity extends FragmentActivity {
 		System.loadLibrary("iconv");
 	}
 	
-	static public CameraTestActivity getMainActivity() {
+	static public ScanningActivity getMainActivity() {
 		return mMainActivity;
 	}
 
@@ -88,6 +88,7 @@ public class CameraTestActivity extends FragmentActivity {
 				NewDanmakuDialog dialog = new NewDanmakuDialog();
 				Bundle args = new Bundle();
 				args.putString(NewDanmakuDialog.SCANNED_BARCODE_KEY, mono);
+				args.putString(NewDanmakuDialog.MESSAGE_KEY, getResources().getString(R.string.new_bar_code));
 				dialog.setArguments(args);
 				dialog.show(getSupportFragmentManager(), "NewDanmakuDialogFragment");
 			}
@@ -264,7 +265,7 @@ public class CameraTestActivity extends FragmentActivity {
 								break;
 							}
 						}
-						Toast.makeText(CameraTestActivity.this, results.toString(), Toast.LENGTH_SHORT).show();
+						Toast.makeText(ScanningActivity.this, results.toString(), Toast.LENGTH_SHORT).show();
 						camera.takePicture(null, null, null, new SaveToDbCallback(results.toString()));
 						mMessageController.searchDanmakuFor(results.toString());
 					}

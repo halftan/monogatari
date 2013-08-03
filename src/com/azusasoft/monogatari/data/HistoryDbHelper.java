@@ -15,6 +15,7 @@ import android.graphics.Bitmap.CompressFormat;
 import android.hardware.Camera.Size;
 import android.provider.BaseColumns;
 import android.util.Log;
+import android.widget.Toast;
 
 public class HistoryDbHelper {
 	private static final String TAG = "scan history";
@@ -87,21 +88,41 @@ public class HistoryDbHelper {
 
 	public Cursor getAllHistory() {
 		SQLiteDatabase db = mDbHelper.getReadableDatabase();
-		return db.query(TABLE, DB_NO_PHOTO_COLUMNS, null, null, null, null, GET_ALL_ORDER_BY);
+		Cursor retC;
+		try {
+			retC = db.query(TABLE, DB_NO_PHOTO_COLUMNS, null, null, null, null, GET_ALL_ORDER_BY);
+		} finally {
+			//db.close();
+		}
+		return retC;
 	}
 	
 	public Bitmap getPhotoById(String id) {
 		SQLiteDatabase db = mDbHelper.getReadableDatabase();
+		Bitmap retBm = null;
 		Cursor cursor = db.query(TABLE, DB_PHOTO_COLUMN, C_ID + " = ?",
 				new String[] { id }, null, null, null);
-		cursor.moveToFirst();
-		byte[] data = cursor.getBlob(cursor.getColumnIndex(C_PHOTO));
-		BitmapFactory.Options opts = new BitmapFactory.Options();
-		opts.inSampleSize = 4;
-		if (data != null)
-			return BitmapFactory.decodeByteArray(data, 0, data.length, opts);
-		else
-			return null;
+		
+		try {
+			Log.d(TAG, "get photo by id: row count is " + cursor.getCount());
+			if (cursor.getCount() == 0) {
+				return null;
+			}
+			cursor.moveToFirst();
+			Log.d(TAG, "Photo column index is " + cursor.getColumnIndex(C_PHOTO));
+			byte[] data = cursor.getBlob(cursor.getColumnIndex(C_PHOTO));
+			BitmapFactory.Options opts = new BitmapFactory.Options();
+			opts.inSampleSize = 4;
+			if (data != null)
+				retBm = BitmapFactory.decodeByteArray(data, 0, data.length, opts);
+		} catch (IllegalStateException e) {
+			Log.wtf(TAG, e);
+		} finally {
+			if (!cursor.isClosed())
+				cursor.close();
+			db.close();
+		}
+		return retBm;
 	}
 
 	public void insertBarcodeAndJpeg(String barcode, byte[] data) {

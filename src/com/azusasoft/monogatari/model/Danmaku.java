@@ -24,6 +24,8 @@ public class Danmaku extends TextView implements AnimationListener {
 	
 	private AnimationListener mListener;
 	
+	public boolean inGumi = false;
+	
 	public Danmaku(Context context, String text, int index) {
 		super(context);
 		mIndex = index;
@@ -102,8 +104,9 @@ public class Danmaku extends TextView implements AnimationListener {
     	mListener.onAnimationEnd(animation);
 	}
 	
-	public void start() {
+	public Danmaku start() {
 		startAnimation(mAnimation);
+		return this;
 	}
 
 }

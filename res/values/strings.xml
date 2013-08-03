@@ -6,5 +6,12 @@
     <string name="cancel">取消</string>
     <string name="history_activity">History</string>
     <string name="not_scanned">还没有扫描到二维码哦~~</string>
+    <string name="no_result">找不到数据</string>
+    <string name="new_bar_code">恭喜你发现一个新的条码！赶快发送第一条弹幕吧：</string>
+    <string name="new_danmaku">新弹幕</string>
+    <string name="preview">预览</string>
+    <string name="new_danmaku_gumi">弹幕组+1</string>
+    <string name="danmaku_input_tag">INPUTTAG</string>
+    <string name="version">0.1.1027</string>
 
 </resources>

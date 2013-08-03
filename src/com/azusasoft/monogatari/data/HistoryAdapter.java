@@ -1,6 +1,5 @@
 package com.azusasoft.monogatari.data;
 
-import java.text.ParseException;
 import java.util.Date;
 
 import android.content.Context;
@@ -18,13 +17,13 @@ public class HistoryAdapter {
 	private static final String TAG = "history adapter";
 	
 	public static final String[] FROM = {
-		HistoryDbHelper.C_BARCODE, HistoryDbHelper.C_CREATED_AT, HistoryDbHelper.C_ID
+		HistoryDbHelper.C_ID, HistoryDbHelper.C_BARCODE, HistoryDbHelper.C_CREATED_AT
 	};
 	public static final int[] TO = {
-		R.id.barcode_text, R.id.date_text, R.id.db_id
+		 R.id.db_id, R.id.barcode_text, R.id.date_text
 	};
 	
-	public static final ViewBinder getViewBinder(final Context context) {
+	public static final ViewBinder getViewBinder() {
 		return new ViewBinder() {
 			
 			@Override
@@ -32,10 +31,9 @@ public class HistoryAdapter {
 				if (view.getId() != R.id.date_text)
 					return false;
 				
-				Date time = new Date(cursor.getLong(columnIndex));
 				((TextView) view).setText(
-						DateFormat.getDateFormat(context).format(time));
-				Log.i(TAG, DateFormat.getDateFormat(context).format(time));
+						DateFormat.format("yyyy-MM-dd hh:mm:ss", cursor.getLong(columnIndex)));
+				Log.i(TAG, DateFormat.format("yyyy-MM-dd hh:mm:ss", cursor.getLong(columnIndex)).toString());
 				return true;
 			}
 		};

@@ -2,20 +2,79 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical" >
+    android:orientation="vertical"
+    android:background="@android:color/background_dark" >
+    
     <TextView 
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/title"
-        android:paddingBottom="20dp"
+        android:textColor="@android:color/white"
+        android:textSize="20sp"
+        android:text="@string/new_danmaku"
+        android:paddingLeft="12dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="10dp"
         />
-    <EditText
+
+    <RelativeLayout 
+        android:id="@+id/controls"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="22sp"
-        android:textColor="#ff33b5e5"
-        android:id="@+id/input"
-        android:inputType="textImeMultiLine|textLongMessage"
-        android:hint="@string/danmaku_hint"/>
+        android:paddingLeft="12dp"
+        android:paddingRight="12dp"
+        android:layout_marginBottom="20dp" >
+        <CheckedTextView
+            android:id="@+id/is_preview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:gravity="center_vertical"
+            android:drawableLeft="@drawable/preview_checkbox"
+            android:checked="false"
+            android:text="@string/preview"
+            android:textColor="@android:color/white"
+            android:textSize="20sp"
+            android:onClick="onPreviewChecked"
+            android:clickable="true" />
+        <ImageButton
+            android:id="@+id/new_danmaku_gumi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_alignParentRight="true"
+            android:contentDescription="@string/new_danmaku_gumi"
+            android:src="@android:drawable/ic_input_add" />
+        <TextView 
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_toLeftOf="@id/new_danmaku_gumi"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:text="@string/new_danmaku_gumi" />
+        </RelativeLayout>
+
+    <ScrollView 
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <LinearLayout 
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/danmaku_gumi"
+            android:orientation="vertical">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal" >
+                <EditText
+                    style="@style/danmaku_gumi"
+                    android:id="@+id/danmaku_gumi_text"
+                    android:tag="@string/danmaku_input_tag"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
 
 </LinearLayout>

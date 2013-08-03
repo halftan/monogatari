@@ -1,9 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/camera_preview"
+    android:id="@+id/main_frame"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@android:color/black" >
+    
+    <FrameLayout 
+        android:id="@+id/camera_preview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/black" >
+        
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/danmaku_displayer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipChildren="false"
+        android:clipToPadding="false" >
+        
+    </FrameLayout>
+    
     <LinearLayout 
         android:id="@+id/controls"
         android:layout_width="match_parent"
@@ -43,14 +61,12 @@
             android:onClick="history"
             android:text="History" />
     </LinearLayout>
-
-    <FrameLayout
-        android:id="@+id/danmaku_displayer"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clipChildren="false"
-        android:clipToPadding="false" >
-        
-    </FrameLayout>
+    
+        <TextView 
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="left|top"
+            android:text="@string/version"
+            android:textSize="14sp"/>
 
 </FrameLayout>

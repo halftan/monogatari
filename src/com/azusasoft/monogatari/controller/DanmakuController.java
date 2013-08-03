@@ -5,9 +5,10 @@ import java.util.EmptyStackException;
 import java.util.List;
 import java.util.Stack;
 
+import org.springframework.util.StringUtils;
+
 import android.content.Context;
 import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
@@ -17,6 +18,7 @@ import com.azusasoft.monogatari.R;
 import com.azusasoft.monogatari.model.Danmaku;
 
 public class DanmakuController {
+	private static final String TAG = "danmaku controller";
 
 	/** 同屏弹幕最大数目 */
 	private static final int DANMAKU_MAX_LINE = 10;
@@ -40,6 +42,8 @@ public class DanmakuController {
 	private int mDanmakuDuration;
 	
 	private static DanmakuController mDanmakuController = null;
+	
+	private boolean mCallbackRemoved = false;
 	
 	private DanmakuController() {};
 	
@@ -71,15 +75,29 @@ public class DanmakuController {
 		for (String text : texts) {
 			insertDanmaku(text);
 		}
-		Log.d("danmaku controller new", String.format("current danmaku count is %d.", mDanmakuCount));
+		Log.d(TAG, String.format("current danmaku count is %d.", mDanmakuCount));
 	}
 	
-	private Danmaku insertDanmaku(String text) {
-		Danmaku d = new Danmaku(mContext, text, mDanmakuCount);
-		mDanmakuList.add(d);
-		mDanmakuStack.push(d);
-		mDanmakuCount++;
-		return d;
+	private List<Danmaku> insertDanmaku(String text) {
+		String[] texts = StringUtils.split(text, "\n");
+		List<Danmaku> retDanmaku = new ArrayList<Danmaku>();
+		if (texts != null)
+			for (String elem : texts) {
+				Danmaku d = new Danmaku(mContext, elem, mDanmakuCount);
+				d.inGumi = true;
+				mDanmakuList.add(d);
+				mDanmakuStack.push(d);
+				mDanmakuCount++;
+				retDanmaku.add(d);
+			}
+		else {
+			Danmaku d = new Danmaku(mContext, text, mDanmakuCount);
+			mDanmakuList.add(d);
+			mDanmakuStack.push(d);
+			mDanmakuCount++;
+			retDanmaku.add(d);
+		}
+		return retDanmaku;
 	}
 	
 	public Runnable spwanAllDanmaku = new Runnable() {
@@ -109,20 +127,34 @@ public class DanmakuController {
 	};
 	
 	synchronized public void popNextDanmaku(long interval) {
-		if (mAnimatingDanmaku <= MAX_ANIMATING_DANMAKU && mDanmakuStack.size() != 0) {
+		if (mAnimatingDanmaku <= MAX_ANIMATING_DANMAKU && !mDanmakuStack.isEmpty()) {
 			try {
 				Danmaku d = mDanmakuStack.pop();
-				d.setPaddingTop(
-						DANMAKU_PADDING_UNIT * (mAnimatingDanmaku % DANMAKU_MAX_LINE))
-						.setAnimationListener(mAnimationListener)
-						.setAnimationStartOffset((mAnimatingDanmaku / DANMAKU_MAX_LINE) 
-								* (mDanmakuDuration / 2) + interval);
-				mDisplayer.addView(d);
-				d.start();
-				Log.d("danmaku controller new", String.format("danmaku layout width is %d.", d.getLayoutParams().width));
-				Log.d("danmaku controller new", String.format("danmaku width is %d.", d.getWidth()));
+				if (d.inGumi) {
+					Stack<Danmaku> gumi = new Stack<Danmaku>();
+					gumi.push(d);
+					while (!mDanmakuStack.isEmpty() && mDanmakuStack.lastElement().inGumi)
+						gumi.push(mDanmakuStack.pop());
+					// Use FILO to make the order of danmaku right
+					int l = gumi.size();
+					for (int i = 0; i < l; ++i) {
+						gumi.get(i).setPaddingTop(
+							DANMAKU_PADDING_UNIT * ((l-i-1) % DANMAKU_MAX_LINE))
+							.setAnimationListener(mAnimationListener);
+					}
+					while (!gumi.isEmpty()) {
+						mDisplayer.addView(gumi.pop().start());
+					}
+				} else {
+					d.setPaddingTop(
+							DANMAKU_PADDING_UNIT * (mAnimatingDanmaku % DANMAKU_MAX_LINE))
+							.setAnimationListener(mAnimationListener)
+							.setAnimationStartOffset((mAnimatingDanmaku / DANMAKU_MAX_LINE) 
+									* (mDanmakuDuration / 2) + interval);
+					mDisplayer.addView(d.start());
+				}
 			} catch (EmptyStackException e) {
-				Log.d("danmaku controller", "All danmaku poped");
+				Log.d(TAG, "All danmaku poped");
 			}
 		}
 	}
@@ -131,10 +163,14 @@ public class DanmakuController {
 		popNextDanmaku(0);
 	}
 	
-	synchronized public Danmaku newDanmaku(String text) {
-		Danmaku d = insertDanmaku(text);
-		if (mNewDanmakuListener != null)
+	synchronized public List<Danmaku> newDanmaku(String text, boolean shouldFireCallback) {
+		List<Danmaku> d = insertDanmaku(text);
+		if (shouldFireCallback && mNewDanmakuListener != null)
 			mNewDanmakuListener.newDanmaku(text);
+		if (mCallbackRemoved) {
+			mCallbackRemoved = false;
+			handler.post(popDanmaku);
+		}
 		return d;
 	}
 	
@@ -153,13 +189,14 @@ public class DanmakuController {
 		mDisplayer.removeAllViews();
 		mEndedDanmakuCount = 0;
 		mDanmakuCount = 0;
+		mAnimatingDanmaku = 0;
 	}
 	
 	AnimationListener mAnimationListener = new AnimationListener() {
 		
 		@Override
 		public void onAnimationStart(Animation animation) {
-			Log.d("danmaku controller", "danmaku starts");
+			Log.d(TAG, "danmaku starts");
 			mAnimatingDanmaku++;
 		}
 		
@@ -168,16 +205,29 @@ public class DanmakuController {
 		
 		@Override
 		public void onAnimationEnd(Animation animation) {
-			Log.d("danmaku controller", "danmaku ends");
+			Log.d(TAG, "danmaku ends");
 			mAnimatingDanmaku--;
 			mEndedDanmakuCount++;
 			if (mDanmakuCount != mEndedDanmakuCount)
-//				removeAllDanmaku();
-//			else
-				popNextDanmaku();
-//			else
-//				handler.removeCallbacks(popDanmaku);
+				popNextDanmaku(0);
+			else {
+				handler.removeCallbacks(popDanmaku);
+				mCallbackRemoved = true;
+				Log.i(TAG, "removed popdanmaku callback");
+			}
 		}
 	};
+	
+	private synchronized void decreaseAnimatiogDanmaku() {
+		mAnimatingDanmaku--;
+	}
+	
+	private synchronized void increaseAnimatingDanmaku() {
+		mAnimatingDanmaku++;
+	}
+	
+	private synchronized void increaseEndedDanmaku() {
+		mEndedDanmakuCount++;
+	}
 	
 }
